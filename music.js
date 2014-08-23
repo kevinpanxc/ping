@@ -17,7 +17,7 @@ var Music = (function () {
     return {
         initialize : function () {
             music_embed = document.createElement("audio");
-            music_embed.setAttribute("src", "music/HenesysMarket.mp3");
+            music_embed.setAttribute("src", "music/LithHarbor.mp3");
             music_embed.setAttribute("autoplay", true);
             music_embed.setAttribute("loop", true);
             music_embed.removed = false;
