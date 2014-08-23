@@ -21,6 +21,7 @@ var Ping = (function () {
     var POINT_CHARGE_RADIUS = 15;
 
     var ctx;
+    var rect;
     var canvas;
     var selected_stationary_charge = -1;
     var number_of_stationary_charges;
@@ -46,10 +47,10 @@ var Ping = (function () {
 
     function mouse_down(e) {
         e.preventDefault();
-        var index_of_charge_element = mouse_check_and_return_index(e.pageX, e.pageY);
+        var index_of_charge_element = mouse_check_and_return_index(e.pageX - rect.left, e.pageY - rect.top);
         if (index_of_charge_element >= 0) {
-            cursor_x = (e.pageX - canvas.offsetLeft) - charge_array[index_of_charge_element].x_pos;
-            cursor_y = (e.pageY - canvas.offsetTop) - charge_array[index_of_charge_element].y_pos;
+            cursor_x = (e.pageX - rect.left - canvas.offsetLeft) - charge_array[index_of_charge_element].x_pos;
+            cursor_y = (e.pageY - rect.top - canvas.offsetTop) - charge_array[index_of_charge_element].y_pos;
             is_mouse_down = true;
             selected_stationary_charge = index_of_charge_element;
         }
@@ -58,14 +59,14 @@ var Ping = (function () {
     function mouse_moved(e) {
         if (is_mouse_down) {
             document.body.style.cursor = 'pointer';
-            var new_x_position = (e.pageX - canvas.offsetLeft) - cursor_x;
-            var new_y_position = (e.pageY - canvas.offsetTop) - cursor_y;
+            var new_x_position = (e.pageX - rect.left - canvas.offsetLeft) - cursor_x;
+            var new_y_position = (e.pageY - rect.top - canvas.offsetTop) - cursor_y;
             var current_element = charge_array[selected_stationary_charge];
             current_element.x_pos = new_x_position;
             current_element.y_pos = new_y_position;
         }
         else {
-            if ( mouse_check_and_return_index(e.pageX, e.pageY) >= 0 ) document.body.style.cursor = 'pointer';
+            if ( mouse_check_and_return_index(e.pageX - rect.left, e.pageY - rect.top) >= 0 ) document.body.style.cursor = 'pointer';
             else document.body.style.cursor = 'default';
         }
     }
@@ -191,7 +192,6 @@ var Ping = (function () {
     }
 
     function add_random_point () {
-        console.log (NUMBER_OF_ELEMENTS_ALLOWED + number_of_stationary_charges);
         if (charge_array.length <= NUMBER_OF_ELEMENTS_ALLOWED + number_of_stationary_charges) {
             var x_negative = Math.round(Math.random());
             var y_negative = Math.round(Math.random());
@@ -205,24 +205,24 @@ var Ping = (function () {
 
             charge_array.push(new PointCharge(1, x_pos, y_pos, -1, new Velocity(0, Math.PI/4), false, current_charge_id++));
         }
-        // if (charge_array.length > NUMBER_OF_ELEMENTS_BEFORE_FADING + number_of_stationary_charges) {
-        //     if (!charge_array[number_of_stationary_charges].start_fade) {
-        //         charge_array[number_of_stationary_charges].start_fade = true;
-        //         charge_array[number_of_stationary_charges].fade_level = 0;
-        //     } else if ( charge_array[number_of_stationary_charges].fade_level > (FADE_TIME / 2) ) {
-        //         if (!charge_array[number_of_stationary_charges + 1].start_fade) {
-        //             charge_array[number_of_stationary_charges + 1].start_fade = true;
-        //             charge_array[number_of_stationary_charges + 1].fade_level = 0;
-        //         }
-        //         if ( charge_array[number_of_stationary_charges].fade_level > (3 * FADE_TIME / 4) ) {
-        //             if (!charge_array[number_of_stationary_charges + 2].start_fade) {
-        //                 charge_array[number_of_stationary_charges + 2].start_fade = true;
-        //                 charge_array[number_of_stationary_charges + 2].fade_level = 0;
-        //             }
-        //         }
-        //         if (charge_array[number_of_stationary_charges].fade_level > FADE_TIME) charge_array.splice(number_of_stationary_charges, 1);
-        //     }
-        // }
+        if (charge_array.length > NUMBER_OF_ELEMENTS_BEFORE_FADING + number_of_stationary_charges) {
+            if (!charge_array[number_of_stationary_charges].start_fade) {
+                charge_array[number_of_stationary_charges].start_fade = true;
+                charge_array[number_of_stationary_charges].fade_level = 0;
+            } else if ( charge_array[number_of_stationary_charges].fade_level > (FADE_TIME / 2) ) {
+                if (!charge_array[number_of_stationary_charges + 1].start_fade) {
+                    charge_array[number_of_stationary_charges + 1].start_fade = true;
+                    charge_array[number_of_stationary_charges + 1].fade_level = 0;
+                }
+                if ( charge_array[number_of_stationary_charges].fade_level > (3 * FADE_TIME / 4) ) {
+                    if (!charge_array[number_of_stationary_charges + 2].start_fade) {
+                        charge_array[number_of_stationary_charges + 2].start_fade = true;
+                        charge_array[number_of_stationary_charges + 2].fade_level = 0;
+                    }
+                }
+                if (charge_array[number_of_stationary_charges].fade_level > FADE_TIME) charge_array.splice(number_of_stationary_charges, 1);
+            }
+        }
     }
 
     function enable_mouse_actions() {
@@ -247,8 +247,9 @@ var Ping = (function () {
         initialize : function () {
             canvas = document.getElementById("canvas");
             ctx = canvas.getContext("2d");
+            rect = canvas.getBoundingClientRect();
 
-            Maps.switch_maps("LINE");
+            Maps.switch_maps("DEFAULT");
 
             start();
         },
@@ -315,7 +316,7 @@ var Maps = (function (ping) {
                 ping.add_stationary_charge(4, 497, 161, 1);
                 ping.add_stationary_charge(4, 383, 161, 1);
 
-                ping.set_number_of_stationary_charges(-19);
+                ping.set_number_of_stationary_charges(17);
             }
         },
 
@@ -338,6 +339,21 @@ var Maps = (function (ping) {
         }
     }
     return {
+        initialize_ui : function () {
+            var list = document.getElementById("map_selector_list");
+            for (var map in MAPS) {
+                var li = document.createElement("li");
+                var img = document.createElement("img");
+                img.src = "images/" + map.toLowerCase() + ".png";
+                li.appendChild(img);
+                li.onclick = (function (map_string) {
+                    return function () { Maps.switch_maps(map_string); }
+                })(map);
+                li.title = map;
+                list.appendChild(li);
+            }
+        }, 
+
         switch_maps : function (map) {
             Ping.stop();
             MAPS[map].initialize();

@@ -22,10 +22,15 @@
   </script>
 </head>
     
-<body onload="Ping.initialize(); Music.initialize()">
-  <div id = "canvasContainer">
-    <canvas id="canvas" width="880" height="600"></canvas>
-    <div id="music_control"><img id="music_control_button" src="images/pause_music.ico"></img></div>
+<body onload="Ping.initialize(); Music.initialize(); Maps.initialize_ui()">
+  <div id = "overall_container">
+    <div id = "canvas_container">
+      <canvas id="canvas" width="880" height="600"></canvas>
+      <div id="music_control"><img id="music_control_button" src="images/pause_music.ico"></img></div>
+    </div>
+    <div id = "map_selector">
+      <ul id = "map_selector_list" ></ul>
+    </div>
   </div>
 </body>
 
