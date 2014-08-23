@@ -18,16 +18,12 @@ var Ping = (function () {
     var current_charge_id = 0;
     var charge_array = [];
 
-    charge_array.push(new PointCharge(30, 200, 200, 1, null, true, current_charge_id++));
-    charge_array.push(new PointCharge(30, 680, 200, -1, null, true, current_charge_id++));
-    charge_array.push(new PointCharge(30, 680, 400, 1, null, true, current_charge_id++));
-    charge_array.push(new PointCharge(30, 200, 400, -1, null, true, current_charge_id++));
-
     var POINT_CHARGE_RADIUS = 15;
 
     var ctx;
     var canvas;
     var selected_stationary_charge = -1;
+    var number_of_stationary_charges;
 
     // mouse booleans
     var is_mouse_down = false;
@@ -40,6 +36,8 @@ var Ping = (function () {
 
     // misc constants
     var FADE_TIME = 5000;
+    var NUMBER_OF_ELEMENTS_BEFORE_FADING = 14;
+    var NUMBER_OF_ELEMENTS_ALLOWED = 20;
 
     function mouse_up () {
         is_mouse_down = false;
@@ -75,7 +73,7 @@ var Ping = (function () {
     function mouse_check_and_return_index(x, y){
         // sets mouse booleans
         // returns relevant charge element index
-        for (var i = 3; i >= 0; i--){
+        for (var i = number_of_stationary_charges - 1; i >= 0; i--){
             if ((x - canvas.offsetLeft) > (charge_array[i].x_pos - POINT_CHARGE_RADIUS)  &&  (x - canvas.offsetLeft) < (charge_array[i].x_pos + POINT_CHARGE_RADIUS)
             && (y - canvas.offsetTop) > (charge_array[i].y_pos - POINT_CHARGE_RADIUS)   &&  (y - canvas.offsetTop) < (charge_array[i].y_pos + POINT_CHARGE_RADIUS)){
                 return i;
@@ -107,6 +105,14 @@ var Ping = (function () {
         ctx.globalAlpha = 1.0;
     }
 
+    function draw_element_highlight_lines (index) {
+        var element = charge_array[index];
+        ctx.beginPath();
+        ctx.strokeStyle = "#E2E2E2";
+        ctx.arc(element.x_pos, element.y_pos, POINT_CHARGE_RADIUS + 1, 0, Math.PI*2, true);
+        ctx.stroke();   
+    }
+
     function re_draw () {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -119,8 +125,10 @@ var Ping = (function () {
                 var velocity = charge_array[i].velocity;
                 charge_array[i].x_pos += ( ( velocity.magnitude * Math.cos(velocity.angle) ) * REDRAW_INTERVAL_TIME / 1000 );
                 charge_array[i].y_pos += ( ( velocity.magnitude * Math.sin(velocity.angle) ) * REDRAW_INTERVAL_TIME / 1000 );            
+                if (charge_array[i].start_fade) charge_array[i].fade_level += REDRAW_INTERVAL_TIME;           
+            } else {
+                draw_element_highlight_lines (i);
             }
-            if (charge_array[i].start_fade) charge_array[i].fade_level += REDRAW_INTERVAL_TIME;
             draw_element(i);
         }
     }
@@ -183,7 +191,8 @@ var Ping = (function () {
     }
 
     function add_random_point () {
-        if (charge_array.length <= 24) {
+        console.log (NUMBER_OF_ELEMENTS_ALLOWED + number_of_stationary_charges);
+        if (charge_array.length <= NUMBER_OF_ELEMENTS_ALLOWED + number_of_stationary_charges) {
             var x_negative = Math.round(Math.random());
             var y_negative = Math.round(Math.random());
             var x_pos;
@@ -194,32 +203,44 @@ var Ping = (function () {
             if (y_negative == 0) y_pos = Math.floor(Math.random() * 100) + 600;
             else y_pos = Math.floor(Math.random() * -100) - 20;
 
-            charge_array.push(new PointCharge(1, x_pos, y_pos, Math.round(Math.random()) == 0 ? -1 : 1, new Velocity(0, Math.PI/4), false, current_charge_id++));
+            charge_array.push(new PointCharge(1, x_pos, y_pos, -1, new Velocity(0, Math.PI/4), false, current_charge_id++));
         }
-        if (charge_array.length > 18) {
-            if (!charge_array[4].start_fade) {
-                charge_array[4].start_fade = true;
-                charge_array[4].fade_level = 0;
-            } else if ( charge_array[4].fade_level > (FADE_TIME / 2) ) {
-                if (!charge_array[5].start_fade) {
-                    charge_array[5].start_fade = true;
-                    charge_array[5].fade_level = 0;
-                }
-                if ( charge_array[4].fade_level > (3 * FADE_TIME / 4) ) {
-                    if (!charge_array[6].start_fade) {
-                        charge_array[6].start_fade = true;
-                        charge_array[6].fade_level = 0;
-                    }
-                }
-                if (charge_array[4].fade_level > FADE_TIME) charge_array.splice(4, 1);
-            }
-        }
+        // if (charge_array.length > NUMBER_OF_ELEMENTS_BEFORE_FADING + number_of_stationary_charges) {
+        //     if (!charge_array[number_of_stationary_charges].start_fade) {
+        //         charge_array[number_of_stationary_charges].start_fade = true;
+        //         charge_array[number_of_stationary_charges].fade_level = 0;
+        //     } else if ( charge_array[number_of_stationary_charges].fade_level > (FADE_TIME / 2) ) {
+        //         if (!charge_array[number_of_stationary_charges + 1].start_fade) {
+        //             charge_array[number_of_stationary_charges + 1].start_fade = true;
+        //             charge_array[number_of_stationary_charges + 1].fade_level = 0;
+        //         }
+        //         if ( charge_array[number_of_stationary_charges].fade_level > (3 * FADE_TIME / 4) ) {
+        //             if (!charge_array[number_of_stationary_charges + 2].start_fade) {
+        //                 charge_array[number_of_stationary_charges + 2].start_fade = true;
+        //                 charge_array[number_of_stationary_charges + 2].fade_level = 0;
+        //             }
+        //         }
+        //         if (charge_array[number_of_stationary_charges].fade_level > FADE_TIME) charge_array.splice(number_of_stationary_charges, 1);
+        //     }
+        // }
     }
 
     function enable_mouse_actions() {
         canvas.onmouseup = mouse_up;
         canvas.onmousedown = mouse_down;
-        canvas.onmousemove = mouse_moved;        
+        canvas.onmousemove = mouse_moved;     
+    }
+
+    function disable_mouse_anctions() {
+        canvas.onmouseup = null;
+        canvas.onmousedown = null;
+        canvas.onmousemove = null;        
+    }
+
+    function start () {
+        re_draw_interval = setInterval(re_draw, REDRAW_INTERVAL_TIME);
+        new_element_interval = setInterval(add_random_point, NEW_ELEMENT_INTERVAL_TIME);
+        enable_mouse_actions();        
     }
 
     return {
@@ -227,10 +248,100 @@ var Ping = (function () {
             canvas = document.getElementById("canvas");
             ctx = canvas.getContext("2d");
 
-            re_draw_interval = setInterval(re_draw, REDRAW_INTERVAL_TIME);
-            new_element_interval = setInterval(add_random_point, NEW_ELEMENT_INTERVAL_TIME);
+            Maps.switch_maps("LINE");
 
-            enable_mouse_actions();
+            start();
+        },
+
+        stop : function () {
+            clearInterval(re_draw_interval);
+            clearInterval(new_element_interval);
+            disable_mouse_anctions();
+            charge_array = [];
+            current_charge_id = 0;
+        },
+
+        start : start,
+
+        add_stationary_charge : function (charge_strength, x_pos, y_pos, polarity) {
+            charge_array.push(new PointCharge(charge_strength, x_pos, y_pos, polarity, null, true, current_charge_id++));
+        },
+
+        set_number_of_stationary_charges : function (number) {
+            number_of_stationary_charges = number;
         }
     }
 })();
+
+var Maps = (function (ping) {
+    // calculating a point on a circle's circumference
+    // x = cx + r * cos(a); y = cy + r * sin(a)
+
+    // cx = 440, cy = 300
+
+    var MAPS = {
+        "DEFAULT" : {
+            initialize : function () {
+                ping.add_stationary_charge(30, 200, 200, 1);
+                ping.add_stationary_charge(30, 680, 200, 1);
+                ping.add_stationary_charge(30, 680, 400, 1);
+                ping.add_stationary_charge(30, 200, 400, 1);
+
+                ping.set_number_of_stationary_charges(4);
+            }
+        },
+
+        "WHEEL" : {
+            initialize : function () {
+                ping.add_stationary_charge(6, 440, 300, -1);
+
+                ping.add_stationary_charge(4, 290, 300, 1);
+                ping.add_stationary_charge(4, 590, 300, 1);
+                ping.add_stationary_charge(4, 440, 150, 1);
+                ping.add_stationary_charge(4, 440, 450, 1);
+
+                ping.add_stationary_charge(4, 546, 406, 1);
+                ping.add_stationary_charge(4, 334, 406, 1);
+                ping.add_stationary_charge(4, 546, 194, 1);
+                ping.add_stationary_charge(4, 334, 194, 1);
+
+                ping.add_stationary_charge(4, 579, 357, 1);
+                ping.add_stationary_charge(4, 301, 357, 1);
+                ping.add_stationary_charge(4, 579, 243, 1);
+                ping.add_stationary_charge(4, 301, 243, 1);
+
+                ping.add_stationary_charge(4, 497, 439, 1);
+                ping.add_stationary_charge(4, 383, 439, 1);
+                ping.add_stationary_charge(4, 497, 161, 1);
+                ping.add_stationary_charge(4, 383, 161, 1);
+
+                ping.set_number_of_stationary_charges(-19);
+            }
+        },
+
+        "LINE" : {
+            initialize : function () {
+                ping.add_stationary_charge(10, 600, 300, 1);
+                ping.add_stationary_charge(10, 570, 300, 1);
+                ping.add_stationary_charge(10, 540, 300, 1);
+                ping.add_stationary_charge(10, 510, 300, 1);
+                ping.add_stationary_charge(10, 480, 300, 1);
+                ping.add_stationary_charge(10, 450, 300, 1);
+                ping.add_stationary_charge(10, 420, 300, 1);
+                ping.add_stationary_charge(10, 390, 300, 1);
+                ping.add_stationary_charge(10, 360, 300, 1);
+                ping.add_stationary_charge(10, 330, 300, 1);
+                ping.add_stationary_charge(10, 300, 300, 1);
+
+                ping.set_number_of_stationary_charges(11);
+            }
+        }
+    }
+    return {
+        switch_maps : function (map) {
+            Ping.stop();
+            MAPS[map].initialize();
+            Ping.start();
+        }
+    }
+})(Ping);
