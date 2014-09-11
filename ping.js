@@ -31,7 +31,7 @@ var Ping = (function () {
 
     // program loop information
     var re_draw_interval;
-    var REDRAW_INTERVAL_TIME = 50; // milliseconds
+    var REDRAW_INTERVAL_TIME = 25; // milliseconds
     var new_element_interval;
     var NEW_ELEMENT_INTERVAL_TIME = 2000;
 
@@ -238,9 +238,25 @@ var Ping = (function () {
     }
 
     function start () {
-        re_draw_interval = setInterval(re_draw, REDRAW_INTERVAL_TIME);
+        animate_charges();
         new_element_interval = setInterval(add_random_point, NEW_ELEMENT_INTERVAL_TIME);
-        enable_mouse_actions();        
+        enable_mouse_actions();
+    }
+
+    var loop_time_stamp = null;
+    var accrued_time = 0;
+    function animate_charges (time_stamp) {
+        re_draw_interval = window.requestAnimationFrame ( animate_charges );
+        if (loop_time_stamp == null) loop_time_stamp = time_stamp;
+        var delta_t = time_stamp - loop_time_stamp;
+        loop_time_stamp = time_stamp;
+        if (!isNaN(delta_t)) {
+            accrued_time += delta_t;
+            while (accrued_time >= REDRAW_INTERVAL_TIME) {
+                re_draw();
+                accrued_time -= REDRAW_INTERVAL_TIME;
+            }
+        }
     }
 
     return {
@@ -255,7 +271,7 @@ var Ping = (function () {
         },
 
         stop : function () {
-            clearInterval(re_draw_interval);
+            window.cancelAnimationFrame(re_draw_interval);
             clearInterval(new_element_interval);
             disable_mouse_anctions();
             charge_array = [];
